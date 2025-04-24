@@ -1,0 +1,37 @@
+import streamlit as st
+import requests
+import time
+
+TRADIER_API_KEY = 'YOUR_API_KEY'
+HEADERS = {
+    'Authorization': f'Bearer {TRADIER_API_KEY}',
+    'Accept': 'application/json'
+}
+BASE_URL = 'https://sandbox.tradier.com/v1/markets/quotes'
+
+TICKERS = ['DIA', 'QQQ']
+
+def get_quotes(symbols):
+    params = {'symbols': ','.join(symbols)}
+    response = requests.get(BASE_URL, headers=HEADERS, params=params)
+    data = response.json()
+    quotes = data.get('quotes', {}).get('quote', [])
+    return quotes if isinstance(quotes, list) else [quotes]
+
+# Streamlit UI
+st.set_page_config(page_title="Live Market Dashboard", layout="wide")
+st.title("Live Ticker Feed: Dow Jones & Nasdaq-100 ETFs")
+placeholder = st.empty()
+
+# Auto-refresh loop
+while True:
+    quotes = get_quotes(TICKERS)
+    with placeholder.container():
+        st.write("Updated prices (auto-refreshing):")
+        for quote in quotes:
+            st.metric(
+                label=quote['symbol'],
+                value=f"${quote['last']:.2f}",
+                delta=f"{quote['change']:.2f}"
+            )
+    time.sleep(5)  # refresh every 5 seconds
